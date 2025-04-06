@@ -1,0 +1,6 @@
+.env
+__pycache__
+figma_files/
+outputs/*
+requetes_md/*
+notes.txt
