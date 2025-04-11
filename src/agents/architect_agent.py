@@ -7,14 +7,19 @@ from typing import Annotated, List, Tuple, Dict
 from typing_extensions import TypedDict
 import os
 from pydantic import BaseModel, Field
+from src.constants import DIR_MD_OUTPUT, PROMPT_ARCHI
 
-DIR_OUTPUT = os.path.join(os.path.dirname(__file__), "../../outputs")
 
-def add_note(state: Dict, note: int) -> Dict:
-    if "note" not in state:
-        state["note"] = []
-    state["note"].append(note)
-    return state
+# def add_note(state: Dict, note: int) -> Dict:
+#     if "note" not in state:
+#         state["note"] = []
+#     state["note"].append(note)
+#     return state
+
+def add_note(existing_notes: List[int], new_note: int) -> List[int]:
+    if not isinstance(existing_notes, list):
+        existing_notes = []
+    return existing_notes + [new_note]
 
 prompt_architect_agent = """
 Role: You are a senior software architect. You receive a high-level description of a web application (webapp) from a user. Based on this, your mission is to produce a clear, structured, documented software architecture manifest ready to be used by other experts (including a GDPR specialist and a technical reviewer).
@@ -48,7 +53,7 @@ The manifest must be clear, structured, and easily readable by:
 
 Once feedback from the reviewer is received, analyze the comments and propose an improved version of the manifest, justifying the modifications.
 
-Expected manifest structure:# Software Architecture Manifest – [Project Name]
+Expected manifest structure:# Software Architecture Manifest - [Project Name]
 
 ## Overview
 Project summary, functional context, technological choices, type of architecture (e.g., hexagonal, microservices, modular monolithic, etc.)
@@ -120,14 +125,14 @@ class Architect_agent:
 
     def architect_node(self, state: Architect_state):
         response = self.model.invoke(
-            [SystemMessage(content=self.system_prompt)] + [HumanMessage(content=state["messages"])]
+            [SystemMessage(content=self.system_prompt)] + state["messages"]
         )
         return {"messages": [AIMessage(content=response.content)]}
 
 
     def review_node(self, state: Architect_state):
         response = self.model.invoke(
-            [SystemMessage(content=self.system_prompt)] + [HumanMessage(content=state["messages"])]
+            [SystemMessage(content=self.system_prompt)] + state["messages"]
         ).with_structured_output(reviwer_response)
         print(f"Iteration {state['iteration']} : Note {response.note}")
         return {"messages": [HumanMessage(content=response.comment)], "note": response.note, "iteration": state["iteration"] + 1}
@@ -155,7 +160,14 @@ if __name__ == "__main__":
 
     model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0, google_api_key=os.getenv("GOOGLE_API_KEY"))
     architect_agent_instance = Architect_agent(model)
-    result = architect_agent_instance.graph.invoke({"messages": [], "note": 0, "iteration": 0})
+    print("===========")
+    print(PROMPT_ARCHI)
+    print("===========")
+    result = architect_agent_instance.graph.invoke({"messages": [HumanMessage(content=PROMPT_ARCHI)], "note": [], "iteration": 0})
 
+    filename = "architecture_manifest.md"
+    dir = DIR_MD_OUTPUT
+    with open(os.path.join(dir, filename), "w") as f:
+        f.write(md)
 
 

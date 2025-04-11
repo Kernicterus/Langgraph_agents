@@ -7,8 +7,7 @@ from typing import Annotated, List, Tuple, Dict
 from typing_extensions import TypedDict
 import os
 from src.utils.utils_UI import get_files_and_context
-
-DIR_OUTPUT = os.path.join(os.path.dirname(__file__), "../../outputs")
+from src.constants import DIR_MD_OUTPUT
 
 prompt_functional_insight_agent = """
 Role:
@@ -44,11 +43,11 @@ Provide a structured Markdown summary with the following format:
 
 ### 1. [Functionality Name]
 **Description**: [What it does, for whom, and in what context]  
-**Related Pages**: [Optional - if traceability is useful]  
+**Related Pages**: [name of the related page(s)]  
 
 ### 2. [Another Functionality Name]
 **Description**: [What it does, for whom, and in what context]  
-**Related Pages**: [Optional - if traceability is useful]  
+**Related Pages**: [name of the related page(s)]  
 
 ### 3. ...
 
@@ -98,6 +97,7 @@ class Functional_insight_agent:
 
     def functional_insight_node(self, state: Functional_insight_state):
         markdown_files = ["# " + file["name"].split('.')[0] + " page :\n" + file["content"] for file in state["files"]]
+        print(markdown_files)
         system_prompt_with_context = self.system_prompt.replace("{webapp_context}", state["webapp_context"]).replace("{architecture}", state["architecture"])
         response = self.model.invoke(
             [SystemMessage(content=system_prompt_with_context)] + [HumanMessage(content=markdown_files)]
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         exit()
     md = result['messages'][-1].content
     filename = "functional_insight.md"
-    dir = DIR_OUTPUT
+    dir = DIR_MD_OUTPUT
     with open(os.path.join(dir, filename), "w") as f:
         f.write(md)
 
