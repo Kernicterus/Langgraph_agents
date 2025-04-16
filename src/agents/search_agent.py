@@ -20,15 +20,15 @@ duckduckgo_tool = DuckDuckGoSearchResults(
 @tool
 def web_scraper_tool(urls_tuple: tuple[str, ...]) -> str:
     """
-    Scrape le contenu des URLs fournies (sous forme de tuple) et retourne le contenu sous forme de chaîne unique.
+    Scrape the content of provided URLs (as a tuple) and return the content as a single string.
     Args:
-        urls_tuple: Tuple d'URLs à scraper.
+        urls_tuple: Tuple of URLs to scrape.
     Returns:
-        str: Contenu textuel extrait des pages web, séparé par des marqueurs.
+        str: Text content extracted from web pages, separated by markers.
     """
     urls = list(urls_tuple)
     if not urls:
-        return "La liste d'URLs fournie est vide."
+        return "The provided URL list is empty."
 
     print(f"--- Scraping URLs: {urls} ---")
     try:
@@ -43,7 +43,7 @@ def web_scraper_tool(urls_tuple: tuple[str, ...]) -> str:
             source_url = doc.metadata.get('source', urls[i])
 
             if not html_content:
-                print(f"Avertissement: Aucun contenu HTML pour l'URL {source_url}")
+                print(f"Warning: No HTML content for URL {source_url}")
                 continue
 
             soup = BeautifulSoup(html_content, "html.parser")
@@ -51,7 +51,7 @@ def web_scraper_tool(urls_tuple: tuple[str, ...]) -> str:
             article = soup.find("article") or soup.find("main") or soup.body
 
             if not article:
-                print(f"Avertissement: Impossible de trouver la balise de contenu principal pour l'URL {source_url}")
+                print(f"Warning: Unable to find main content tag for URL {source_url}")
                 continue
 
             for tag in article.find_all(["script", "style", "header", "footer", "nav",
@@ -65,69 +65,69 @@ def web_scraper_tool(urls_tuple: tuple[str, ...]) -> str:
 
 
             if cleaned_text.strip():
-                all_contents.append(f"--- Contenu de {source_url} ---\n{cleaned_text}")
+                all_contents.append(f"--- Content from {source_url} ---\n{cleaned_text}")
                 scraped_urls.append(source_url)
             else:
-                print(f"Avertissement: Aucun texte utile extrait de {source_url} après nettoyage.")
+                print(f"Warning: No useful text extracted from {source_url} after cleaning.")
 
 
         if not all_contents:
-            return "Aucun contenu valide n'a pu être extrait des URLs fournies."
+            return "No valid content could be extracted from the provided URLs."
 
-        print(f"--- Scraping réussi pour {len(scraped_urls)} URLs ---")
+        print(f"--- Scraping successful for {len(scraped_urls)} URLs ---")
         return "---\n".join(all_contents)
 
     except Exception as e:
-        print(f"Erreur lors du scraping des URLs: {urls}. Erreur: {e}")
-        return f"Erreur lors du scraping des URLs: {str(e)}"
+        print(f"Error while scraping URLs: {urls}. Error: {e}")
+        return f"Error while scraping URLs: {str(e)}"
 
 
 @lru_cache(maxsize=30)
 def cached_web_scraper(urls_tuple: tuple) -> str:
     """
-    Version mise en cache du web scraper qui utilise un tuple d'URLs comme clé.
+    Cached version of the web scraper that uses a tuple of URLs as a key.
     """
     return web_scraper_tool.invoke({"urls_tuple": urls_tuple})
 
 
 prompt_search_agent_v3 = """
-Tu es un agent de chat spécialisé dans la collecte d'informations et la recherche sur le web. Ton objectif est de fournir une réponse complète et bien sourcée à la requête de l'utilisateur.
+You are a chat agent specialized in collecting information and searching the web. Your goal is to provide a comprehensive and well-sourced answer to the user's query.
 
-Voici ton processus de travail :
+Here is your work process:
 
-1.  **Comprendre la Requête** : Analyse attentivement les sous requetes. Utilise l'outil `DuckDuckGoSearchResults` pour trouver des informations pertinentes sur le sujet ou les sous-questions.
-3.  **Analyse et Sélection** : Examine les résultats de la recherche (titres, snippets). Identifie les **3 URLs maximum** qui semblent les plus prometteuses et pertinentes pour fournir une information détaillée et fiable répondant à la requête initiale. Si aucun résultat ne semble pertinent, indique-le.
-4.  **Scraping Ciblé** : Parmi les URLs pertinentes, utilise l'outil `web_scraper_tool` **UNIQUEMENT** avec le tuple de ces URLs sélectionnées (maximum 3) pour en extraire le contenu détaillé. N'appelle cet outil que si tu as des URLs valides et pertinentes issues de la recherche. Assure-toi de passer l'argument `urls_tuple` correctement.
-5.  **Synthèse et Réponse** : Combine les informations issues des snippets de recherche et du contenu scrapé (si disponible) pour formuler une réponse complète, cohérente et structurée à la requête initiale de l'utilisateur sous format markdown.
-6.  **Citation des Sources** : À la fin de ta réponse, liste clairement toutes les URLs que tu as effectivement utilisées via l'outil `web_scraper_tool` pour obtenir l'information. Si tu n'as utilisé que les snippets de recherche, mentionne-le, liste les urls et explique pourquoi tu n'as pas utilisé l'outil `web_scraper_tool`.
-7.  **Gestion des Limites** : Si l'information est incomplète, si certaines URLs n'ont pas pu être scrapées, ou si tu atteins la limite d'appels au scraper, signale-le à l'utilisateur. Tu ne peux utiliser l'outil `web_scraper_tool` que 3 fois par requête utilisateur complète.
+1.  **Understanding the Query**: Carefully analyze the sub-queries. Use the `DuckDuckGoSearchResults` tool to find relevant information on the topic or sub-questions.
+3.  **Analysis and Selection**: Examine the search results (titles, snippets). Identify a **maximum of 3 URLs** that seem most promising and relevant to provide detailed and reliable information addressing the initial query. If no results seem relevant, indicate it.
+4.  **Targeted Scraping**: Among the relevant URLs, use the `web_scraper_tool` **ONLY** with the tuple of selected URLs (maximum 3) to extract detailed content. Only call this tool if you have valid and relevant URLs from the search. Make sure to pass the `urls_tuple` argument correctly.
+5.  **Synthesis and Response**: Combine information from search snippets and scraped content (if available) to formulate a complete, coherent, and structured response to the user's initial query in markdown format.
+6.  **Source Citation**: At the end of your response, clearly list all URLs you actually used via the `web_scraper_tool` to obtain information. If you only used search snippets, mention it, list the URLs, and explain why you didn't use the `web_scraper_tool`.
+7.  **Limit Management**: If information is incomplete, if some URLs couldn't be scraped, or if you reach the scraper call limit, indicate it to the user. You can only use the `web_scraper_tool` 3 times per complete user query.
 
-Sois méthodique, précis et transparent sur ton processus et tes sources. N'hésite pas à indiquer si tu manques d'informations sur certains points. 
-N'extrapole pas de réponse qui n'est pas dans les sources.
-N'oublie pas de mettre en forme ta réponse en markdown.
-Reflechis étape par étape avant de répondre.
+Be methodical, precise, and transparent about your process and sources. Don't hesitate to indicate if you lack information on certain points.
+Don't extrapolate an answer that isn't in the sources.
+Don't forget to format your answer in markdown.
+Think step by step before answering.
 """
 
 prompt_query_decomposer = """
-Tu es un agent spécialisé dans l'analyse et la décomposition de requêtes complexes. Ta mission est de :
+You are an agent specialized in analyzing and decomposing complex queries. Your mission is to:
 
-1. **Analyser la requête initiale** de l'utilisateur pour identifier les différents aspects et angles qui méritent d'être explorés.
+1. **Analyze the initial query** from the user to identify different aspects and angles that deserve to be explored.
 
-2. **Décomposer la requête en sous-questions** plus spécifiques et ciblées qui, ensemble, permettront de construire une réponse complète.
-   - Chaque sous-question doit être autonome et précise
-   - Évite les redondances entre les sous-questions
-   - Limite-toi à 3 sous-questions maximum pour rester efficace
-   - N'extrapole pas trop de sous-questions, tu dois rester concentré sur la requête initiale.
+2. **Decompose the query into sub-questions** that are more specific and targeted which, together, will allow building a complete answer.
+   - Each sub-question must be autonomous and precise
+   - Avoid redundancies between sub-questions
+   - Limit yourself to a maximum of 3 sub-questions to remain efficient
+   - Don't extrapolate too many sub-questions, you must stay focused on the initial query.
 
-3. **Transmettre le tout** au node suivant sous forme d'une liste structurée en markdown avec les sous-questions numérotées
+3. **Transmit everything** to the next node in the form of a structured list in markdown with numbered sub-questions
 
 
-Exemple de format de réponse :
+Example response format:
 
-# Sous-questions :
-1. Première sous-question
-2. Deuxième sous-question
-3. Troisième sous-question
+# Sub-questions:
+1. First sub-question
+2. Second sub-question
+3. Third sub-question
 
 """
 
@@ -159,7 +159,7 @@ class SearchAgent:
         self.web_scraper_calls = 0
 
     def _create_ai_message(self, response, sender, type_message):
-        """Crée un message AI avec les métadonnées appropriées."""
+        """Creates an AI message with appropriate metadata."""
         if type_message == "AIMessage":
             return AIMessage(
                 content=response.content,
@@ -178,8 +178,8 @@ class SearchAgent:
                 )
     
     def call_query_decomposer(self, state: SearchAgentState):
-        """Appelle le modèle LLM (query_decomposer)."""
-        print("--- Appel query_decomposer ---")
+        """Calls the LLM model (query_decomposer)."""
+        print("--- Calling query_decomposer ---")
         messages = state["messages"]
         if not isinstance(messages[0], SystemMessage):
             current_messages = [SystemMessage(content=self.system_query_decomposer)] + messages
@@ -189,16 +189,16 @@ class SearchAgent:
         original_response = self.model_query_decomposer.invoke(current_messages)
 
         response_with_metadata = self._create_ai_message(original_response, sender="DecomposerAgent", type_message="HumanMessage")
-        print(f"Réponse du query_decomposer: {response_with_metadata}")
+        print(f"Query_decomposer response: {response_with_metadata}")
         return {"messages": [response_with_metadata]}
 
     def call_researcher(self, state: SearchAgentState):
-        """Appelle le modèle LLM (researcher_node)."""
-        print("--- Appel researcher_node ---")
+        """Calls the LLM model (researcher_node)."""
+        print("--- Calling researcher_node ---")
         messages = state["messages"]
-        # Ajoute le prompt système au début s'il n'y est pas déjà implicitement
-        # (Certains modèles/frameworks le gèrent différemment)
-        # Pour être sûr, on peut vérifier le premier message.
+        # Add system prompt at the beginning if it's not already implicitly there
+        # (Some models/frameworks handle this differently)
+        # To be sure, we can check the first message.
         if not isinstance(messages[0], SystemMessage):
              current_messages = [SystemMessage(content=self.system_researcher)] + messages
         else:
@@ -210,17 +210,17 @@ class SearchAgent:
         return {"messages": [response_with_metadata]}
 
     def call_tool(self, state: SearchAgentState):
-        """Exécute les appels aux outils demandés par le researcher_node."""
-        print("--- Appel Noeud Outil ---")
+        """Executes tool calls requested by the researcher_node."""
+        print("--- Calling Tool Node ---")
         last_message = state["messages"][-1]
         tool_calls = last_message.tool_calls
-        print(f"Appels outils demandés: {tool_calls}")
+        print(f"Requested tool calls: {tool_calls}")
 
         results_messages = []
         for tool_call in tool_calls:
             tool_name = tool_call['name']
             args = tool_call['args']
-            print(f"Exécution outil: {tool_name} avec args: {args}")
+            print(f"Executing tool: {tool_name} with args: {args}")
 
             result_content = ""
 
@@ -228,52 +228,52 @@ class SearchAgent:
                 if tool_name == web_scraper_tool.name:
                     self.web_scraper_calls += 1
                     if self.web_scraper_calls > 3:
-                        print("Limite d'appels au scraper atteinte.")
-                        result_content = "Limite d'appels (3) à l'outil web_scraper_tool atteinte pour cette requête."
+                        print("Scraper call limit reached.")
+                        result_content = "Call limit (3) to web_scraper_tool reached for this query."
                     else:
                         urls_arg = args.get('urls_tuple')
                         if urls_arg is None:
                              urls_arg = args.get('urls')
 
                         if not urls_arg or not isinstance(urls_arg, list) or len(urls_arg) == 0:
-                            result_content = "Erreur: Aucune URL valide n'a été fournie à l'outil web_scraper_tool. Argument 'urls_tuple' manquant ou vide."
+                            result_content = "Error: No valid URL was provided to the web_scraper_tool. Argument 'urls_tuple' missing or empty."
                             print(result_content)
                         else:
                             urls_tuple_for_cache = tuple(urls_arg)
-                            print(f"Appel cached_web_scraper avec tuple clé: {urls_tuple_for_cache}")
+                            print(f"Calling cached_web_scraper with key tuple: {urls_tuple_for_cache}")
                             raw_scraped_content = cached_web_scraper(urls_tuple_for_cache)
-                            print(f"Résultat scraping brut (tronqué): {raw_scraped_content[:200]}...")
+                            print(f"Raw scraping result (truncated): {raw_scraped_content[:200]}...")
 
                             if len(raw_scraped_content) > MAX_TOOL_MSG_LENGTH:
-                                print(f"Contenu scrapé trop long ({len(raw_scraped_content)} chars), troncation à {MAX_TOOL_MSG_LENGTH}.")
-                                result_content = raw_scraped_content[:MAX_TOOL_MSG_LENGTH] + f"\n\n[... Contenu tronqué ({len(raw_scraped_content) - MAX_TOOL_MSG_LENGTH} caractères omis) ...]"
+                                print(f"Scraped content too long ({len(raw_scraped_content)} chars), truncating to {MAX_TOOL_MSG_LENGTH}.")
+                                result_content = raw_scraped_content[:MAX_TOOL_MSG_LENGTH] + f"\n\n[... Truncated content ({len(raw_scraped_content) - MAX_TOOL_MSG_LENGTH} characters omitted) ...]"
                             else:
                                 result_content = raw_scraped_content
-                            print(f"Contenu final pour ToolMessage (tronqué): {result_content[:500]}...")
+                            print(f"Final content for ToolMessage (truncated): {result_content[:500]}...")
 
                 elif tool_name == duckduckgo_tool.name or tool_name == 'duckduckgo_results_json':
                     query_arg = args.get('query', '')
                     if not query_arg:
-                         result_content = "Erreur: Requête de recherche ('query') manquante pour duckduckgo_tool."
+                         result_content = "Error: Search query ('query') missing for duckduckgo_tool."
                          print(result_content)
                     else:
                         raw_search_result = duckduckgo_tool.invoke(query_arg)
-                        print(f"Résultat recherche brut (tronqué): {raw_search_result[:200]}...")
+                        print(f"Raw search result (truncated): {raw_search_result[:200]}...")
 
                         if len(raw_search_result) > MAX_SEARCH_MSG_LENGTH:
-                            print(f"Résultat recherche trop long ({len(raw_search_result)} chars), troncation...")
-                            result_content = raw_search_result[:MAX_SEARCH_MSG_LENGTH] + "\n[... Résultats tronqués ...]"
+                            print(f"Search result too long ({len(raw_search_result)} chars), truncating...")
+                            result_content = raw_search_result[:MAX_SEARCH_MSG_LENGTH] + "\n[... Truncated results ...]"
                         else:
                             result_content = raw_search_result
-                        print(f"Résultat recherche final pour ToolMessage (tronqué): {result_content[:500]}...")
+                        print(f"Final search result for ToolMessage (truncated): {result_content[:500]}...")
 
                 else:
-                    result_content = f"Erreur: Outil inconnu '{tool_name}' demandé."
+                    result_content = f"Error: Unknown tool '{tool_name}' requested."
                     print(result_content)
 
             except Exception as e:
-                 print(f"Erreur lors de l'exécution de l'outil {tool_name}: {e}")
-                 result_content = f"Erreur interne lors de l'appel de l'outil {tool_name}: {str(e)}"
+                 print(f"Error during execution of tool {tool_name}: {e}")
+                 result_content = f"Internal error during tool call {tool_name}: {str(e)}"
 
             results_messages.append(ToolMessage(
                 content=result_content,
@@ -284,31 +284,31 @@ class SearchAgent:
 
 
     def exists_action(self, state: SearchAgentState):
-        """Vérifie si le dernier message contient des appels d'outils."""
-        print("--- Vérification Action Outil ---")
+        """Checks if the last message contains tool calls."""
+        print("--- Checking Tool Action ---")
         last_message = state["messages"][-1]
         has_tool_calls = hasattr(last_message, 'tool_calls') and len(last_message.tool_calls) > 0
-        print(f"Appels outils présents: {has_tool_calls}")
+        print(f"Tool calls present: {has_tool_calls}")
         return has_tool_calls
 
 
     def run(self, query: str, config=None) -> str:
         """
-        Exécute l'agent de recherche avec une requête donnée et retourne la réponse finale.
+        Runs the search agent with a given query and returns the final response.
         """
-        print(f"--- DÉMARRAGE NOUVELLE RECHERCHE ---")
-        print(f"Requête initiale: {query}")
+        print(f"--- STARTING NEW SEARCH ---")
+        print(f"Initial query: {query}")
         self.web_scraper_calls = 0
         initial_state = {"messages": [HumanMessage(content=query)]}
 
-        # Invoque le graphe
-        # Utiliser stream pour voir les étapes peut être utile pour le débogage:
+        # Invoke the graph
+        # Using stream to see the steps can be useful for debugging:
         # for event in self.graph.stream(initial_state, config=config):
         #     print(event)
-        # Ou invoke pour obtenir directement l'état final:
+        # Or invoke to directly get the final state:
         final_state = self.graph.invoke(initial_state, config=config)
 
-        print("--- RECHERCHE TERMINÉE ---")
+        print("--- SEARCH COMPLETED ---")
         final_message = final_state["messages"][-1]
         if isinstance(final_message, SystemMessage):
             for msg in reversed(final_state["messages"]):
@@ -316,8 +316,8 @@ class SearchAgent:
                     final_message = msg
                     break
 
-        # return "Aucune réponse générée."
-        return final_message.content if final_message else "Aucune réponse générée."
+        # return "No response generated."
+        return final_message.content if final_message else "No response generated."
 
 
 if __name__ == "__main__":
@@ -328,44 +328,44 @@ if __name__ == "__main__":
 
     load_dotenv()
 
-    # Assure-toi que la clé API est disponible
+    # Make sure the API key is available
     # if not os.getenv("MISTRAL_API_KEY"):
-    #     print("Erreur: La variable d'environnement MISTRAL_API_KEY n'est pas définie.")
+    #     print("Error: The MISTRAL_API_KEY environment variable is not defined.")
     if not os.getenv("GOOGLE_API_KEY"):
-        print("Erreur: La variable d'environnement GOOGLE_API_KEY n'est pas définie.")
+        print("Error: The GOOGLE_API_KEY environment variable is not defined.")
     else:
         # model = ChatMistralAI(model="mistral-large-latest", temperature=0)
         model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0, google_api_key=os.getenv("GOOGLE_API_KEY"))
         search_agent_instance = SearchAgent(model)
 
-        # Requête d'exemple
-        # query = "Quels sont les avantages et inconvénients de LangGraph pour construire des agents LLM comparé à une approche séquentielle simple ?"
-        # query = "Donne-moi les dernières nouvelles sur la mission Artemis de la NASA."
-        # query = "Explique le concept de 'Retrieval-Augmented Generation' (RAG) et pourquoi c'est important pour les LLMs."
-        # query = "comment fait google pour proposer des resultats pertinents lorsque l'on tape une requête"
-        query = "comment faire une matrice de projection pour voir des vecteurs dans un espace vectoriel ?"
+        # Example query
+        # query = "What are the advantages and disadvantages of LangGraph for building LLM agents compared to a simple sequential approach?"
+        # query = "Give me the latest news on NASA's Artemis mission."
+        # query = "Explain the concept of 'Retrieval-Augmented Generation' (RAG) and why it's important for LLMs."
+        # query = "how does Google provide relevant results when typing a query"
+        query = "how to create a projection matrix to view vectors in a vector space?"
         try:
             final_response = search_agent_instance.run(query)
-            print("--- Réponse Finale de l'Agent ---")
-            # Écriture de la réponse dans un fichier Markdown
+            print("--- Final Agent Response ---")
+            # Writing the response to a Markdown file
             print(final_response)
             filename = f"../../requetes_md/reponse_{query[:30].replace(' ', '_')}.md"
             with open(filename, "w", encoding="utf-8") as f:
-                f.write(f"# Réponse à la requête: {query}\n\n")
+                f.write(f"# Response to query: {query}\n\n")
                 for item in final_response:
                     f.write(item)
-            print(f"La réponse a été sauvegardée dans le fichier: {filename}")
+            print(f"The response has been saved to file: {filename}")
         except Exception as e:
-            print(f"Une erreur est survenue lors de l'exécution de l'agent: {e}")
+            print(f"An error occurred while running the agent: {e}")
 
-        # # Exemple avec une deuxième requête pour vérifier la réinitialisation du compteur
-        # print("--- TEST SECONDE REQUÊTE ---")
-        # query2 = "Qu'est-ce que l'énergie sombre ?"
+        # # Example with a second query to verify counter reset
+        # print("--- TESTING SECOND QUERY ---")
+        # query2 = "What is dark energy?"
         # try:
         #     final_response2 = search_agent_instance.run(query2)
-        #     print("-- Réponse Finale de l'Agent (Requête 2) ---")
+        #     print("-- Final Agent Response (Query 2) ---")
         #     print(final_response2)
         # except Exception as e:
-        #     print(f"Une erreur est survenue lors de l'exécution de la seconde requête de l'agent: {e}")
+        #     print(f"An error occurred while running the agent's second query: {e}")
 
 

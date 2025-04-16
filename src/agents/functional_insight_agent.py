@@ -59,6 +59,7 @@ Optional: You may group features by modules, user roles, or use cases if pattern
 
 Purpose:
 Your output will be sent to a Software Architect who will use it as input to define the application's software architecture manifest. Clarity, abstraction, and relevance are key.
+If you receive a feedback from the user, you should update your output to reflect the feedback.
 """
 
 class Functional_insight_state(TypedDict):
@@ -67,13 +68,14 @@ class Functional_insight_state(TypedDict):
     webapp_context: str
     error: bool
     architecture: str
-
+    feedback: bool
 
 class Functional_insight_agent:
     def __init__(self, model):
         graph = StateGraph(Functional_insight_state)
         graph.add_node("load_files", self.load_files)
         graph.add_node("functional_insight_node", self.functional_insight_node)
+        graph.add_node("human_feedback_node", self.human_feedback_node)
 
         graph.set_entry_point("load_files")
         graph.add_conditional_edges(
@@ -81,12 +83,19 @@ class Functional_insight_agent:
             lambda state: state.get("error", False),
             {True: END, False: "functional_insight_node"}
         )
-        graph.add_edge("functional_insight_node", END)
+        graph.add_edge("functional_insight_node", "human_feedback_node")
+        graph.add_conditional_edges(
+            "human_feedback_node",
+            lambda state: state.get("feedback", False),
+            {True: END, False: "functional_insight_node"}
+        )
         
         self.model = model
         self.system_prompt = prompt_functional_insight_agent
         self.graph = graph.compile()
 
+    def human_feedback_node(self, state: Functional_insight_state):
+        pass
 
     def load_files(self, state: Functional_insight_state) -> dict:
         files, context, architecture = get_files_and_context(dir)
@@ -114,7 +123,7 @@ if __name__ == "__main__":
 
     model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0, google_api_key=os.getenv("GOOGLE_API_KEY"))
     functional_insight_agent_instance = Functional_insight_agent(model)
-    result = functional_insight_agent_instance.graph.invoke({"files": [], "error": False})
+    result = functional_insight_agent_instance.graph.invoke({"files": [], "error": False, "feedback": False})
     if result['error']:
         print("Error: No files found")
         exit()
