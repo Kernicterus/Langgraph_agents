@@ -8,15 +8,11 @@ from typing_extensions import TypedDict
 import os
 from pydantic import BaseModel, Field
 from src.constants import DIR_MD_OUTPUT, INPUT_ARCHI
-from src.agents.prompts import PROMPT_ARCHITECT_AGENT, PROMPT_ARCHITECT_REVIEWER_AGENT
+from src.agents.prompts import PROMPT_ARCHITECT_AGENT
+from src.utils.utils_agent import add_note
 
 
-def add_note(existing_notes: List[int], new_note: int) -> List[int]:
-    if not existing_notes :
-        return [new_note]
-    return existing_notes + [new_note]
-
-class Manager_conception_state(TypedDict):
+class Global_worflow_state(TypedDict):
     messages: Annotated[List[BaseMessage], add_messages]
     note : Annotated[List[int], add_note]
     iteration : int
@@ -26,9 +22,13 @@ class Manager_conception_state(TypedDict):
     gdpr_insight : str
 
 
-class Manager_global_design_agent:
+class Global_graph:
     def __init__(self, model):
-        graph = StateGraph(Manager_conception_state)
+        graph = StateGraph(Global_worflow_state)
+        graph.add_node("functional_insight_node", self.functional_insight_node)
+        graph.add_node("architect_node", self.architect_node)
+        graph.add_node("GDPR_node", self.GDPR_node)
+        
         graph.set_entry_point("architect_node")
         graph.add_edge("architect_node", "review_node")
         graph.add_conditional_edges(
@@ -42,7 +42,7 @@ class Manager_global_design_agent:
         self.graph = graph.compile()
 
 
-    def architect_node(self, state: Manager_conception_state):
+    def architect_node(self, state: Global_worflow_state):
         response = self.model.invoke(
             [SystemMessage(content=self.system_prompt_architect)] + state["messages"]
         )
@@ -52,7 +52,7 @@ class Manager_global_design_agent:
         return {"messages": [AIMessage(content=response.content)], "manifest": response.content}
 
 
-    def check_reviewing_process(self, state: Manager_conception_state):
+    def check_reviewing_process(self, state: Global_worflow_state):
         print(f"check_reviewing_process : {state['iteration']} : {state['note']}")
         print(f"last note : {state['note'][-1]}")
         if state["iteration"] >= 4:

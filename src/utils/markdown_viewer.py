@@ -7,7 +7,7 @@ class MarkdownViewerApp:
     Tkinter application for displaying Markdown text in a basic way
     and allowing validation or sending a remark.
     """
-    def __init__(self, root, markdown_text, agent_name = "Agent"):
+    def __init__(self, markdown_text, agent_name = "Agent"):
         """
         Initialize the application.
 
@@ -15,7 +15,7 @@ class MarkdownViewerApp:
             root: The main Tkinter window (tk.Tk()).
             markdown_text: The string containing the Markdown text.
         """
-        self.root = root
+        self.root = tk.Tk()
         self.markdown_text = markdown_text
         self.remark_sent = None
 
@@ -29,18 +29,18 @@ class MarkdownViewerApp:
         self.root.grid_rowconfigure(4, weight=0, minsize=50)
         self.root.grid_columnconfigure(0, weight=1)
 
-        text_main_frame = tk.Frame(root, height=500)
+        text_main_frame = tk.Frame(self.root, height=500)
         text_main_frame.grid(row=1, column=0, sticky="nsew")
         text_main_frame.pack_propagate(False)
         text_main_frame.grid_propagate(False)
 
-        text_remark_frame = tk.Frame(root, height=150)
+        text_remark_frame = tk.Frame(self.root, height=150)
         text_remark_frame.grid(row=3, column=0, sticky="nsew")
         text_remark_frame.pack_propagate(False)
         text_remark_frame.grid_propagate(False)
 
         self.md_label = tk.Label(
-            root, 
+            self.root, 
             text=f"Markdown Text from {agent_name}:", 
             anchor="w",
             font=("Arial", 10, "bold"),
@@ -60,7 +60,7 @@ class MarkdownViewerApp:
         self.text_widget.pack(fill="both", expand=True)
 
         self.remark_label = tk.Label(
-            root, 
+            self.root, 
             text="Add your remark below (optional):", 
             anchor="w",
             font=("Arial", 10, "bold"),
@@ -88,7 +88,7 @@ class MarkdownViewerApp:
         # Make the text area non-editable by the user
         self.text_widget.config(state=tk.DISABLED)
 
-        button_frame = tk.Frame(root, pady=10)
+        button_frame = tk.Frame(self.root, pady=10)
         button_frame.grid(row=4, column=0, sticky="ew", padx=10, pady=10)
 
         self.save_button = tk.Button(
@@ -196,6 +196,10 @@ class MarkdownViewerApp:
         
         self.root.destroy()
 
+    def get_remark(self):
+        self.root.mainloop()
+        return self.remark_sent
+
 if __name__ == "__main__":
     markdown_input = r"""
     # Main Document Title
@@ -217,13 +221,12 @@ if __name__ == "__main__":
     Be careful with special characters like \* or \_ which shouldn't be formatted.
 
     """
-    main_window = tk.Tk()
 
-    app = MarkdownViewerApp(main_window, markdown_input, "MyAgent 1")
+    app = MarkdownViewerApp(markdown_input, "MyAgent 1")
 
-    main_window.mainloop()
+    remark = app.get_remark()
 
-    if app.remark_sent is not None:
-        print(f"\nPost-closure processing: A remark was saved: '{app.remark_sent}'")
+    if remark is not None:
+        print(f"\nPost-closure processing: A remark was saved: '{remark}'")
     else:
         print("\nPost-closure processing: No remark was provided.")

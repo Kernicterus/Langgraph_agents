@@ -7,6 +7,7 @@ from typing import Annotated, List, Tuple, Dict
 from typing_extensions import TypedDict
 import os
 from src.utils.utils_UI import get_files_and_context
+from src.utils.markdown_viewer import MarkdownViewerApp
 from src.constants import DIR_MD_OUTPUT
 
 prompt_functional_insight_agent = """
@@ -87,7 +88,7 @@ class Functional_insight_agent:
         graph.add_conditional_edges(
             "human_feedback_node",
             lambda state: state.get("feedback", False),
-            {True: END, False: "functional_insight_node"}
+            {True: "functional_insight_node", False: END}
         )
         
         self.model = model
@@ -95,7 +96,11 @@ class Functional_insight_agent:
         self.graph = graph.compile()
 
     def human_feedback_node(self, state: Functional_insight_state):
-        pass
+        app = MarkdownViewerApp(state["messages"][-1].content, "Functional Insight Agent")
+        remark = app.get_remark()
+        if remark is not None:
+            return {"feedback": True, "messages": [HumanMessage(content=remark)]}
+        return {"feedback": False}
 
     def load_files(self, state: Functional_insight_state) -> dict:
         files, context, architecture = get_files_and_context(dir)
@@ -106,10 +111,9 @@ class Functional_insight_agent:
 
     def functional_insight_node(self, state: Functional_insight_state):
         markdown_files = ["# " + file["name"].split('.')[0] + " page :\n" + file["content"] for file in state["files"]]
-        print(markdown_files)
         system_prompt_with_context = self.system_prompt.replace("{webapp_context}", state["webapp_context"]).replace("{architecture}", state["architecture"])
         response = self.model.invoke(
-            [SystemMessage(content=system_prompt_with_context)] + [HumanMessage(content=markdown_files)]
+            [SystemMessage(content=system_prompt_with_context)] + [HumanMessage(content=markdown_files)] + state["messages"]
         )
         return {"messages": [AIMessage(content=response.content)]}
     
