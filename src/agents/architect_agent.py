@@ -100,7 +100,7 @@ if __name__ == "__main__":
     print("===== INPUT======")
     print(INPUT_ARCHI)
     print("===========")
-    result = architect_agent_instance.graph.invoke({"messages": [HumanMessage(content=PROMPT_ARCHITECT_AGENT)], "iteration": 0})
+    result = architect_agent_instance.graph.invoke({"messages": [HumanMessage(content=INPUT_ARCHI)], "iteration": 0})
     md = result["manifest"]
     filename = "architecture_manifest.md"
     dir = DIR_MD_OUTPUT
