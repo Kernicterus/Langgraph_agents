@@ -12,8 +12,16 @@ def add_note(existing_notes: List[int], new_note: int) -> List[int]:
 def summarize_messages(messages: List[BaseMessage]) -> str:
     load_dotenv()
     model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0, google_api_key=os.getenv("GOOGLE_API_KEY"))
-    system_prompt = "You are a helpful assistant that summarizes messages. You are given a list of messages and you need to summarize them in a concise manner."
+    system_prompt = """
+    You are an assistant who summarizes conversations between agents and reviewers. 
+    Create a balanced summary (4-5 paragraphs) that captures:
+    - The main points of the evaluations performed
+    - The improvements made following feedback
+    - The evolution of work quality
+    Do not mention the created manifests, focus on the revision process.
+    """
     summary = model.invoke([SystemMessage(content=system_prompt)] + messages).content
+    
     return summary
 
 def check_reviewing_process(iteration: int, note: List[int], iteration_max: int = 4, note_max: int = 90, diff_notes_max: int = 5):

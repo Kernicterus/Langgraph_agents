@@ -10,11 +10,8 @@ from pydantic import BaseModel, Field
 from src.constants import DIR_MD_OUTPUT, INPUT_GDPR
 from src.agents.prompts import PROMPT_GDPR_AGENT, PROMPT_GDPR_REVIEWER_AGENT
 from src.agents.search_agent import SearchAgent
+from src.utils.utils_agent import add_note, check_reviewing_process
 
-def add_note(existing_notes: List[int], new_note: int) -> List[int]:
-    if not existing_notes :
-        return [new_note]
-    return existing_notes + [new_note]
 
 @tool
 def get_search_agent_response(query: str) -> str:
@@ -30,6 +27,9 @@ class GDPR_state(TypedDict):
     iteration : int
     manifest : str
     comment_architecture : str
+    iteration_max : int
+    note_max : int
+    diff_notes_max : int
 
 class reviewer_response(BaseModel):
     note : int = Field(description="The note of the review on a scale of 0 to 100")
@@ -85,17 +85,7 @@ class GDPR_agent:
     
 
     def check_reviewing_process(self, state: GDPR_state):
-        print(f"check_reviewing_process : {state['iteration']} : {state['note']}")
-        print(f"last note : {state['note'][-1]}")
-        if state["iteration"] >= 4:
-            return True
-        if state["note"][-1] >= 85:
-            return True
-        if state["iteration"] >= 2 :
-            diff_notes = abs(state["note"][-1] - state["note"][-2])
-            if diff_notes <= 5:
-                return True
-        return False
+        return check_reviewing_process(state["iteration"], state["note"], state["iteration_max"], state["note_max"], state["diff_notes_max"])
     
     def exists_action(self, state: GDPR_state):
         """Checks if the last message contains tool calls."""
@@ -154,7 +144,7 @@ if __name__ == "__main__":
     print("===== INPUT======")
     print(INPUT_GDPR)
     print("===========")
-    result = gdpr_agent_instance.graph.invoke({"messages": [HumanMessage(content=INPUT_GDPR)], "iteration": 0})
+    result = gdpr_agent_instance.graph.invoke({"messages": [HumanMessage(content=INPUT_GDPR)], "iteration": 0, "iteration_max": 4, "note_max": 85, "diff_notes_max": 5})
     md = result["manifest"]
     filename = "gdpr_manifest.md"
     dir = DIR_MD_OUTPUT

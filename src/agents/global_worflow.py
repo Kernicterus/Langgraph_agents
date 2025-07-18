@@ -49,13 +49,13 @@ class Global_graph:
 
 
     def architect_node(self, state: Global_worflow_state):
-        architect_response = self.architect_agent.graph.invoke({"messages": [HumanMessage(content=INPUT_ARCHI)], "iteration": 0})
+        architect_response = self.architect_agent.graph.invoke({"messages": [HumanMessage(content=INPUT_ARCHI)], "iteration": 0, "iteration_max": 4, "note_max": 90, "diff_notes_max": 5})
         summary = summarize_messages(architect_response["messages"])
         return {"messages": [AIMessage(content=summary)], "architecture_manifest": architect_response["manifest"]}
 
 
     def gdpr_node(self, state: Global_worflow_state):
-        gdpr_response = self.gdpr_agent.graph.invoke({"messages": [HumanMessage(content=state["architecture_manifest"])], "iteration": 0})
+        gdpr_response = self.gdpr_agent.graph.invoke({"messages": [HumanMessage(content=state["architecture_manifest"])], "iteration": 0, "iteration_max": 4, "note_max": 85, "diff_notes_max": 5})
         summary = summarize_messages(gdpr_response["messages"])
         return {"messages": [AIMessage(content=summary)], "gdpr_manifest": gdpr_response["manifest"]}
 
@@ -78,3 +78,4 @@ if __name__ == "__main__":
 
     model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0, google_api_key=os.getenv("GOOGLE_API_KEY"))
     global_graph_instance = Global_graph(model)
+    result = global_graph_instance.graph.invoke({"messages": [HumanMessage(content=INPUT_ARCHI)], "iteration": 0, "iteration_max": 4, "note_max": 90, "diff_notes_max": 5})

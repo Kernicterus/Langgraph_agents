@@ -9,24 +9,17 @@ import os
 from pydantic import BaseModel, Field
 from src.constants import DIR_MD_OUTPUT, INPUT_ARCHI
 from src.agents.prompts import PROMPT_ARCHITECT_AGENT, PROMPT_ARCHITECT_REVIEWER_AGENT
+from src.utils.utils_agent import add_note, check_reviewing_process
 
-
-# def add_note(state: Dict, note: int) -> Dict:
-#     if "note" not in state:
-#         state["note"] = []
-#     state["note"].append(note)
-#     return state
-
-def add_note(existing_notes: List[int], new_note: int) -> List[int]:
-    if not existing_notes :
-        return [new_note]
-    return existing_notes + [new_note]
 
 class Architect_state(TypedDict):
     messages: Annotated[List[BaseMessage], add_messages]
     note : Annotated[List[int], add_note]
     iteration : int
     manifest : str
+    iteration_max : int
+    note_max : int
+    diff_notes_max : int
 
 
 class reviewer_response(BaseModel):
@@ -75,17 +68,7 @@ class Architect_agent:
     
 
     def check_reviewing_process(self, state: Architect_state):
-        print(f"check_reviewing_process : {state['iteration']} : {state['note']}")
-        print(f"last note : {state['note'][-1]}")
-        if state["iteration"] >= 4:
-            return True
-        if state["note"][-1] >= 90:
-            return True
-        if state["iteration"] >= 2 :
-            diff_notes = abs(state["note"][-1] - state["note"][-2])
-            if diff_notes <= 5:
-                return True
-        return False
+        return check_reviewing_process(state["iteration"], state["note"], state["iteration_max"], state["note_max"], state["diff_notes_max"])
 
 
 if __name__ == "__main__":
@@ -100,7 +83,7 @@ if __name__ == "__main__":
     print("===== INPUT======")
     print(INPUT_ARCHI)
     print("===========")
-    result = architect_agent_instance.graph.invoke({"messages": [HumanMessage(content=INPUT_ARCHI)], "iteration": 0})
+    result = architect_agent_instance.graph.invoke({"messages": [HumanMessage(content=INPUT_ARCHI)], "iteration": 0, "iteration_max": 4, "note_max": 90, "diff_notes_max": 5})
     md = result["manifest"]
     filename = "architecture_manifest.md"
     dir = DIR_MD_OUTPUT
