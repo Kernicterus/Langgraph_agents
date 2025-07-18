@@ -7,11 +7,12 @@ from typing import Annotated, List, Tuple, Dict
 from typing_extensions import TypedDict
 import os
 from pydantic import BaseModel, Field
-from src.constants import DIR_MD_OUTPUT, INPUT_GDPR
+from src.constants import DIR_MD_OUTPUT, RED, BLUE, YELLOW, GREEN, RESET
+from src.inputs import INPUT_GDPR
 from src.agents.prompts import PROMPT_GDPR_AGENT, PROMPT_GDPR_REVIEWER_AGENT
 from src.agents.search_agent import SearchAgent
 from src.utils.utils_agent import add_note, check_reviewing_process
-
+from src.utils.custom_messages import GDPRMessage, ReviewerMessage
 
 @tool
 def get_search_agent_response(query: str) -> str:
@@ -70,18 +71,18 @@ class GDPR_agent:
         print("=========== GDPR RESPONSE ===========")
         print(f"Iteration {state['iteration']} : {response.content}")
         print("=========================================")
-        return {"messages": [AIMessage(content=response.content)], "manifest": response.content}
+        return {"messages": [GDPRMessage(content=response.content)], "manifest": response.content}
 
 
     def review_node(self, state: GDPR_state):
         structured_response = self.model.with_structured_output(reviewer_response).invoke(
             [SystemMessage(content=self.system_prompt_GDPR_reviewer)] + state["messages"]
         )
-        print("=========== REVIEWER RESPONSE ===========")
+        print(f"=========== REVIEWER RESPONSE ==========={RED}")
         print(f"Iteration {state['iteration']} : Note {structured_response.note}")
         print(f"Comment : {structured_response.comment}")
-        print("=========================================")
-        return {"messages": [HumanMessage(content=structured_response.comment)], "note": structured_response.note, "iteration": state["iteration"] + 1, "comment_architecture": structured_response.comment_architecture}
+        print(f"========================================={RESET}")
+        return {"messages": [ReviewerMessage(content=structured_response.comment)], "note": structured_response.note, "iteration": state["iteration"] + 1, "comment_architecture": structured_response.comment_architecture}
     
 
     def check_reviewing_process(self, state: GDPR_state):

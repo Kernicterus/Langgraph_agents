@@ -7,10 +7,11 @@ from typing import Annotated, List, Tuple, Dict
 from typing_extensions import TypedDict
 import os
 from pydantic import BaseModel, Field
-from src.constants import DIR_MD_OUTPUT, INPUT_ARCHI
+from src.constants import DIR_MD_OUTPUT, RED, BLUE, YELLOW, GREEN, RESET
+from src.inputs import INPUT_ARCHI
 from src.agents.prompts import PROMPT_ARCHITECT_AGENT, PROMPT_ARCHITECT_REVIEWER_AGENT
 from src.utils.utils_agent import add_note, check_reviewing_process
-
+from src.utils.custom_messages import ArchitectMessage, ReviewerMessage
 
 class Architect_state(TypedDict):
     messages: Annotated[List[BaseMessage], add_messages]
@@ -32,6 +33,7 @@ class Architect_agent:
         graph = StateGraph(Architect_state)
         graph.add_node("architect_node", self.architect_node)
         graph.add_node("review_node", self.review_node)
+
         graph.set_entry_point("architect_node")
         graph.add_edge("architect_node", "review_node")
         graph.add_conditional_edges(
@@ -53,18 +55,18 @@ class Architect_agent:
         print("=========== ARCHITECT RESPONSE ===========")
         print(f"Iteration {state['iteration']} : {response.content}")
         print("=========================================")
-        return {"messages": [AIMessage(content=response.content)], "manifest": response.content}
+        return {"messages": [ArchitectMessage(content=response.content)], "manifest": response.content}
 
 
     def review_node(self, state: Architect_state):
         structured_response = self.model.with_structured_output(reviewer_response).invoke(
             [SystemMessage(content=self.system_prompt_reviewer)] + state["messages"]
         )
-        print("=========== REVIEWER RESPONSE ===========")
+        print(f"=========== REVIEWER RESPONSE ==========={RED}")
         print(f"Iteration {state['iteration']} : Note {structured_response.note}")
         print(f"Comment : {structured_response.comment}")
-        print("=========================================")
-        return {"messages": [HumanMessage(content=structured_response.comment)], "note": structured_response.note, "iteration": state["iteration"] + 1}
+        print(f"========================================={RESET}")
+        return {"messages": [ReviewerMessage(content=structured_response.comment)], "note": structured_response.note, "iteration": state["iteration"] + 1}
     
 
     def check_reviewing_process(self, state: Architect_state):

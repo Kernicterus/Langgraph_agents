@@ -6,3 +6,4 @@ requetes_md/*
 notes.txt
 venv/
 documents/*
+*.pyc
