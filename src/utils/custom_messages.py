@@ -1,5 +1,19 @@
-from langchain_core.messages import BaseMessage, AIMessage
+from langchain_core.messages import BaseMessage, AIMessage, HumanMessage
 from typing import Literal, Any, Dict, List, Union
+
+
+def retype_message(messages: List[BaseMessage]) -> List[BaseMessage]:
+    """Retype the message to the correct type"""
+    new_messages = []
+    for message in messages:
+        if isinstance(message, ReviewerMessage):
+            message = HumanMessage(content=message.content)
+        elif isinstance(message, ArchitectMessage):
+            message = AIMessage(content=message.content)
+        elif isinstance(message, GDPRMessage):
+            message = AIMessage(content=message.content)
+        new_messages.append(message)
+    return new_messages
 
 
 class ReviewerMessage(AIMessage):

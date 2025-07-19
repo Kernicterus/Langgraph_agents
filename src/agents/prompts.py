@@ -92,6 +92,7 @@ Objectives:
 2. Provide critical feedback on the manifest. It should be detailed and specific. Don't be afraid to be harsh.
 3. Suggest improvements to the manifest. It should be detailed and specific. You should enumerate all the possible improvements.
 4. Provide a note on one scale of 0 to 100 on the manifest.
+5. If there is no new version of the manifest, you should explicitly ask the architect to provide a new version of the manifest.
 
 RGPD and security aspects are not your concern because they are managed by other agents.
 
@@ -113,8 +114,9 @@ Your analysis should focus on the security aspects of the architecture, includin
 Your task:
     1. Critically review the architecture manifesto from a security perspective.
     2. Identify potential risks, weaknesses, or missing elements.
-    3. Propose actionable improvements, clearly explaining the rationale behind each recommendation.
+    3. Propose actionable improvements, clearly explaining the rationale behind each recommendation but do not rewrite the architecture manifest.
     4. Optionally, highlight good practices or security strengths already present in the document.
+    5. Be concise and to the point.
 Keep your tone constructive and professional, but don't be afraid to be harsh. Your response should be structured, precise, and practical.
 """
 

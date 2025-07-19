@@ -7,11 +7,11 @@ from typing import Annotated, List, Tuple, Dict
 from typing_extensions import TypedDict
 import os
 from pydantic import BaseModel, Field
-from src.constants import DIR_MD_OUTPUT, RED, BLUE, YELLOW, GREEN, RESET
+from src.utils.constants import DIR_MD_OUTPUT, RED, BLUE, YELLOW, GREEN, RESET, ORANGE
 from src.inputs import INPUT_ARCHI
 from src.agents.prompts import PROMPT_ARCHITECT_AGENT, PROMPT_ARCHITECT_REVIEWER_AGENT
 from src.utils.utils_agent import add_note, check_reviewing_process
-from src.utils.custom_messages import ArchitectMessage, ReviewerMessage
+from src.utils.custom_messages import ArchitectMessage, ReviewerMessage, retype_message
 
 class Architect_state(TypedDict):
     messages: Annotated[List[BaseMessage], add_messages]
@@ -50,7 +50,7 @@ class Architect_agent:
 
     def architect_node(self, state: Architect_state):
         response = self.model.invoke(
-            [SystemMessage(content=self.system_prompt_architect)] + state["messages"]
+            [SystemMessage(content=self.system_prompt_architect)] + retype_message(state["messages"])
         )
         print("=========== ARCHITECT RESPONSE ===========")
         print(f"Iteration {state['iteration']} : {response.content}")
@@ -60,12 +60,15 @@ class Architect_agent:
 
     def review_node(self, state: Architect_state):
         structured_response = self.model.with_structured_output(reviewer_response).invoke(
-            [SystemMessage(content=self.system_prompt_reviewer)] + state["messages"]
+            [SystemMessage(content=self.system_prompt_reviewer)] + retype_message(state["messages"])
         )
         print(f"=========== REVIEWER RESPONSE ==========={RED}")
         print(f"Iteration {state['iteration']} : Note {structured_response.note}")
         print(f"Comment : {structured_response.comment}")
         print(f"========================================={RESET}")
+        if state["iteration"] > 0:
+            if state["note"][-1] - structured_response.note > 0:
+                return {"messages": [ReviewerMessage(content=structured_response.comment)], "note": structured_response.note, "iteration": state["iteration"]}
         return {"messages": [ReviewerMessage(content=structured_response.comment)], "note": structured_response.note, "iteration": state["iteration"] + 1}
     
 

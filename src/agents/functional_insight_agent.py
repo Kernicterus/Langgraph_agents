@@ -8,7 +8,7 @@ from typing_extensions import TypedDict
 import os
 from src.utils.utils_UI import get_files_and_context
 from src.utils.markdown_viewer import MarkdownViewerApp
-from src.constants import DIR_MD_OUTPUT
+from src.utils.constants import DIR_MD_OUTPUT
 
 prompt_functional_insight_agent = """
 Role:

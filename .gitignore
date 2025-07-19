@@ -7,3 +7,4 @@ notes.txt
 venv/
 documents/*
 *.pyc
+outputs/*

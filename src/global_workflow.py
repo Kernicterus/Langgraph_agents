@@ -7,7 +7,7 @@ from typing import Annotated, List, Tuple, Dict
 from typing_extensions import TypedDict
 import os
 from pydantic import BaseModel, Field
-from src.constants import DIR_MD_OUTPUT, RED, BLUE, YELLOW, GREEN, RESET
+from src.utils.constants import DIR_MD_OUTPUT, RED, BLUE, YELLOW, GREEN, RESET
 from src.inputs import INPUT_ARCHI  
 from src.agents.prompts import PROMPT_ARCHITECT_AGENT, PROMPT_GDPR_AGENT, PROMPT_MANAGER_AGENT, PROMPT_SECURITY_AGENT, PROMPT_GLOBAL_REVIEWER_AGENT
 from src.utils.utils_agent import add_note, check_reviewing_process
@@ -61,12 +61,16 @@ class Global_graph:
 
     def architect_node(self, state: Global_worflow_state):
         if state["iteration"] == 0:
-            architect_response = self.architect_agent.graph.invoke({"messages": [HumanMessage(content=INPUT_ARCHI)], "iteration": 0, "iteration_max": 4, "note_max": 90, "diff_notes_max": 5})
+            architect_response = self.architect_agent.graph.invoke({"messages": [HumanMessage(content=INPUT_ARCHI)], "iteration": 0, "iteration_max": 3, "note_max": 90, "diff_notes_max": 5})
         else:
-            input = state['architect_messages'] + [HumanMessage(content=state['global_review_comment'])]    
+            input = state['architect_messages'] + [HumanMessage(content=state['security_insight'])] + [HumanMessage(content=state['global_review_comment'])] 
             architect_response = self.architect_agent.graph.invoke({"messages": input, "iteration": 0, "iteration_max": 3, "note_max": 90, "diff_notes_max": 5})
         summary = summarize_messages(architect_response["messages"])
-        return {"messages": [ArchitectMessage(content=summary)], "architecture_manifest": architect_response["manifest"]}
+        return {
+            "messages": [ArchitectMessage(content=summary)], 
+            "architecture_manifest": architect_response["manifest"],
+            "architect_messages": architect_response["messages"]
+            }
 
 
     def gdpr_node(self, state: Global_worflow_state):
@@ -109,16 +113,17 @@ if __name__ == "__main__":
 
     load_dotenv()
 
-    model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0, max_output_tokens=4000, google_api_key=os.getenv("GOOGLE_API_KEY"))
+    model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0, max_output_tokens=5000, google_api_key=os.getenv("GOOGLE_API_KEY"))
     global_graph_instance = Global_graph(model)
     result = global_graph_instance.graph.invoke({"messages": [HumanMessage(content=INPUT_ARCHI)], "iteration": 0, "iteration_max": 4, "note_max": 90, "diff_notes_max": 5})
     global_agent_messages = result['messages']
     manifest_architecture = result['architecture_manifest']
     manifest_gdpr = result['gdpr_manifest']
 
-    with open(os.path.join(DIR_MD_OUTPUT, "global_agent_messages.md"), "w") as f:
-        f.write(global_agent_messages)
     with open(os.path.join(DIR_MD_OUTPUT, "manifest_architecture.md"), "w") as f:
         f.write(manifest_architecture)
     with open(os.path.join(DIR_MD_OUTPUT, "manifest_gdpr.md"), "w") as f:
         f.write(manifest_gdpr)
+    with open(os.path.join(DIR_MD_OUTPUT, "global_agent_messages.md"), "w") as f:
+        for message in global_agent_messages:
+            f.write(f"{message.type} : \n {message.content} \n\n")

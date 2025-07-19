@@ -3,7 +3,7 @@ from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from dotenv import load_dotenv
 import os
-from src.constants import YELLOW, RESET, BLUE, RED, GREEN
+from src.utils.constants import YELLOW, RESET, BLUE, RED, GREEN
 from src.utils.custom_messages import ArchitectMessage, GDPRMessage, ReviewerMessage, SecurityMessage
 
 def add_note(existing_notes: List[int], new_note: int) -> List[int]:
@@ -14,7 +14,6 @@ def add_note(existing_notes: List[int], new_note: int) -> List[int]:
 def summarize_messages(messages: List[BaseMessage]) -> str:
     load_dotenv()
         
-    print(f"{BLUE}messages : {messages}{RESET}")
     messages_to_summarize = ""
     model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0, max_output_tokens=512, google_api_key=os.getenv("GOOGLE_API_KEY"))
     for message in messages:

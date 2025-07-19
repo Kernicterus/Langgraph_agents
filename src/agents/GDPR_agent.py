@@ -7,12 +7,12 @@ from typing import Annotated, List, Tuple, Dict
 from typing_extensions import TypedDict
 import os
 from pydantic import BaseModel, Field
-from src.constants import DIR_MD_OUTPUT, RED, BLUE, YELLOW, GREEN, RESET
+from src.utils.constants import DIR_MD_OUTPUT, RED, BLUE, YELLOW, GREEN, RESET
 from src.inputs import INPUT_GDPR
 from src.agents.prompts import PROMPT_GDPR_AGENT, PROMPT_GDPR_REVIEWER_AGENT
 from src.agents.search_agent import SearchAgent
 from src.utils.utils_agent import add_note, check_reviewing_process
-from src.utils.custom_messages import GDPRMessage, ReviewerMessage
+from src.utils.custom_messages import GDPRMessage, ReviewerMessage, retype_message
 
 @tool
 def get_search_agent_response(query: str) -> str:
@@ -66,7 +66,7 @@ class GDPR_agent:
 
     def GDPR_node(self, state: GDPR_state):
         response = self.model.bind_tools([get_search_agent_response]).invoke(
-            [SystemMessage(content=self.system_prompt_GDPR)] + state["messages"]
+            [SystemMessage(content=self.system_prompt_GDPR)] + retype_message(state["messages"])
         )
         print("=========== GDPR RESPONSE ===========")
         print(f"Iteration {state['iteration']} : {response.content}")
@@ -76,12 +76,15 @@ class GDPR_agent:
 
     def review_node(self, state: GDPR_state):
         structured_response = self.model.with_structured_output(reviewer_response).invoke(
-            [SystemMessage(content=self.system_prompt_GDPR_reviewer)] + state["messages"]
+            [SystemMessage(content=self.system_prompt_GDPR_reviewer)] + retype_message(state["messages"])
         )
         print(f"=========== REVIEWER RESPONSE ==========={RED}")
         print(f"Iteration {state['iteration']} : Note {structured_response.note}")
         print(f"Comment : {structured_response.comment}")
         print(f"========================================={RESET}")
+        if state["iteration"] > 0:
+            if state["note"][-1] - structured_response.note > 0:
+                return {"messages": [ReviewerMessage(content=structured_response.comment)], "note": structured_response.note, "iteration": state["iteration"], "comment_architecture": structured_response.comment_architecture}
         return {"messages": [ReviewerMessage(content=structured_response.comment)], "note": structured_response.note, "iteration": state["iteration"] + 1, "comment_architecture": structured_response.comment_architecture}
     
 
