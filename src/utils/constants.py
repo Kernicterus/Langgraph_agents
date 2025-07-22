@@ -1,6 +1,4 @@
-import os
-
-DIR_MD_OUTPUT = os.path.join(os.path.dirname(__file__), "../../outputs")
+DIR_MD_OUTPUT = "D:/agents_langgraph/outputs"
 
 RED = "\033[91m"
 BLUE = "\033[94m"

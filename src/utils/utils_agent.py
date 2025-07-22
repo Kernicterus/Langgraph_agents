@@ -1,10 +1,13 @@
-from typing import List
+from typing import List, TYPE_CHECKING
 from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from dotenv import load_dotenv
 import os
-from src.utils.constants import YELLOW, RESET, BLUE, RED, GREEN
+from src.utils.constants import YELLOW, RESET, BLUE, RED, GREEN, ORANGE
 from src.utils.custom_messages import ArchitectMessage, GDPRMessage, ReviewerMessage, SecurityMessage
+
+if TYPE_CHECKING:
+    from src.agents.arborescence_agent import ArborescenceDetails
 
 def add_note(existing_notes: List[int], new_note: int) -> List[int]:
     if not existing_notes :
@@ -55,3 +58,15 @@ def check_reviewing_process(iteration: int, note: List[int], iteration_max, note
         if diff_notes <= diff_notes_max:
             return True
     return False
+
+
+def ask_user_create_files(arborescence_details: List["ArborescenceDetails"]):
+    for detail in arborescence_details:
+        print(f"{BLUE}File Path : {detail.file_path}{RESET}")
+    print(f"{ORANGE}TOTAL FILES : {len(arborescence_details)}{RESET}")
+    print(f"{ORANGE}DO YOU WANT TO CREATE THESE FILES ? (y/n){RESET}")
+    answer = input()
+    if answer == "y":
+        return True
+    else:
+        return False
